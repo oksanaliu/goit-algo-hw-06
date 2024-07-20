@@ -1,5 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import heapq
 
 # Створення графа
 G_ecosystem = nx.Graph()
@@ -28,11 +29,42 @@ nx.draw_networkx_edge_labels(G_ecosystem, pos, edge_labels=labels)
 plt.title('Ecological Network Graph with Weights')
 plt.show()
 
-# Реалізація алгоритму Дейкстри для знаходження найкоротшого шляху між всіма вершинами графа
-shortest_paths = dict(nx.all_pairs_dijkstra_path(G_ecosystem))
+# Реалізація алгоритму Дейкстри
+def dijkstra(graph, start):
+    # Ініціалізація відстаней
+    distances = {node: float('inf') for node in graph.nodes}
+    distances[start] = 0
+    priority_queue = [(0, start)]
+    shortest_paths = {node: [] for node in graph.nodes}
+    shortest_paths[start] = [start]
+    
+    while priority_queue:
+        current_distance, current_node = heapq.heappop(priority_queue)
+        
+        if current_distance > distances[current_node]:
+            continue
+        
+        for neighbor in graph.neighbors(current_node):
+            weight = graph[current_node][neighbor]['weight']
+            distance = current_distance + weight
+            
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                heapq.heappush(priority_queue, (distance, neighbor))
+                shortest_paths[neighbor] = shortest_paths[current_node] + [neighbor]
+    
+    return distances, shortest_paths
+
+# Знаходження найкоротших шляхів від кожної вершини до всіх інших
+all_distances = {}
+all_shortest_paths = {}
+for node in G_ecosystem.nodes:
+    distances, paths = dijkstra(G_ecosystem, node)
+    all_distances[node] = distances
+    all_shortest_paths[node] = paths
 
 # Вивід найкоротших шляхів між всіма вершинами
-for start_node, paths in shortest_paths.items():
+for start_node, paths in all_shortest_paths.items():
     for end_node, path in paths.items():
         print(f"Shortest path from {start_node} to {end_node}: {path}")
 
